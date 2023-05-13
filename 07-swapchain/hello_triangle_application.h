@@ -13,6 +13,12 @@ struct QueueFamilyIndices {
     }
 };
 
+struct SwapchainSupportDetails {
+    VkSurfaceCapabilitiesKHR capabilities;
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR> present_modes;
+};
+
 class HelloTriangleApplication {
 public:
     virtual void OnInit();
@@ -42,6 +48,20 @@ protected:
     virtual void DestroyLogicalDevice();
     virtual void CreateSurface();
     virtual void DestroySurface();
+    virtual bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
+
+    virtual const std::vector<const char*> GetDeviceExtensions() {
+        return std::vector<const char*>{
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        };
+    }
+
+    virtual SwapchainSupportDetails QuerySwapchainSupport(VkPhysicalDevice device);
+    virtual VkSurfaceFormatKHR ChooseSwapchainSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& available_formats);
+    virtual VkPresentModeKHR ChooseSwapchainPresentMode(const std::vector<VkPresentModeKHR>& available_present_modes);
+    virtual VkExtent2D ChooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+    virtual void CreateSwapchain();
+    virtual void DestroySwapchain();
 
 #ifdef NDEBUG
     const bool kEnableValidationLayers = false;
@@ -58,4 +78,8 @@ protected:
     VkDevice device_ = VK_NULL_HANDLE;
     VkSurfaceKHR surface_ = VK_NULL_HANDLE;
     VkQueue present_queue_ = VK_NULL_HANDLE;
+    VkSwapchainKHR swapchain_ = VK_NULL_HANDLE;
+    std::vector<VkImage> swapchain_images_{};
+    VkFormat swapchain_image_format_;
+    VkExtent2D swapchain_extent_;
 };
