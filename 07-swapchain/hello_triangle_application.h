@@ -62,6 +62,8 @@ protected:
     virtual VkExtent2D ChooseSwapchainExtent(const VkSurfaceCapabilitiesKHR& capabilities);
     virtual void CreateSwapchain();
     virtual void DestroySwapchain();
+    virtual void CreateSwapchainImageViews();
+    virtual void DestroySwapchainImageViews();
 
 #ifdef NDEBUG
     const bool kEnableValidationLayers = false;
@@ -82,4 +84,5 @@ protected:
     std::vector<VkImage> swapchain_images_{};
     VkFormat swapchain_image_format_;
     VkExtent2D swapchain_extent_;
+    std::vector<VkImageView> swapchain_image_views_{};
 };

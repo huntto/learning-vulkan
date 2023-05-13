@@ -21,10 +21,12 @@ void HelloTriangleApplication::OnInit() {
     PickPhysicalDevice();
     CreateLogicalDevice();
     CreateSwapchain();
+    CreateSwapchainImageViews();
 }
 
 void HelloTriangleApplication::OnRelease() {
     LOGD("OnRelease");
+    DestroySwapchainImageViews();
     DestroySwapchain();
     DestroyLogicalDevice();
     DestroySurface();
@@ -474,5 +476,37 @@ void HelloTriangleApplication::DestroySwapchain() {
     if (device_ && swapchain_) {
         vkDestroySwapchainKHR(device_, swapchain_, nullptr);
         swapchain_ = VK_NULL_HANDLE;
+    }
+}
+
+void HelloTriangleApplication::CreateSwapchainImageViews() {
+    swapchain_image_views_.resize(swapchain_images_.size());
+    for (size_t i = 0; i < swapchain_images_.size(); i++) {
+        VkImageViewCreateInfo create_info{};
+        create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        create_info.image = swapchain_images_[i];
+        create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        create_info.format = swapchain_image_format_;
+        create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        create_info.subresourceRange.baseMipLevel = 0;
+        create_info.subresourceRange.levelCount = 1;
+        create_info.subresourceRange.baseArrayLayer = 0;
+        create_info.subresourceRange.layerCount = 1;
+        if (vkCreateImageView(device_, &create_info, nullptr, &swapchain_image_views_[i]) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create image views!");
+        }
+    }
+}
+
+void HelloTriangleApplication::DestroySwapchainImageViews() {
+    if (device_ && !swapchain_image_views_.empty()) {
+        for (auto image_view : swapchain_image_views_) {
+            vkDestroyImageView(device_, image_view, nullptr);
+        }
+        swapchain_image_views_.clear();
     }
 }
