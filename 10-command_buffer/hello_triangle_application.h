@@ -77,6 +77,7 @@ protected:
     virtual void DestroyCommandPool();
     virtual void CreateCommandBuffer();
     virtual void DestroyCommandBuffer();
+    virtual void RecordCommandBuffer(VkCommandBuffer command_buffer, uint32_t image_index);
 
 #ifdef NDEBUG
     const bool kEnableValidationLayers = false;
