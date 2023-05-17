@@ -75,8 +75,8 @@ protected:
     virtual void DestroyFramebuffers();
     virtual void CreateCommandPool();
     virtual void DestroyCommandPool();
-    virtual void CreateCommandBuffer();
-    virtual void DestroyCommandBuffer();
+    virtual void CreateCommandBuffers();
+    virtual void DestroyCommandBuffers();
     virtual void RecordCommandBuffer(VkCommandBuffer command_buffer, uint32_t image_index);
     virtual void CreateSyncObjects();
     virtual void DestroySyncObjects();
@@ -87,29 +87,36 @@ protected:
     const bool kEnableValidationLayers = true;
 #endif
 
+    const int kMaxFramesInFlight = 2;
+
     HINSTANCE hinstance_;
     HWND hwnd_;
 
     VkInstance instance_ = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT debug_messenger_ = VK_NULL_HANDLE;
+    VkSurfaceKHR surface_ = VK_NULL_HANDLE;
+
     VkPhysicalDevice physical_device_ = VK_NULL_HANDLE;
     VkDevice device_ = VK_NULL_HANDLE;
-    VkSurfaceKHR surface_ = VK_NULL_HANDLE;
     VkQueue present_queue_ = VK_NULL_HANDLE;
     VkQueue graphics_queue_ = VK_NULL_HANDLE;
+
     VkSwapchainKHR swapchain_ = VK_NULL_HANDLE;
     std::vector<VkImage> swapchain_images_{};
     VkFormat swapchain_image_format_;
     VkExtent2D swapchain_extent_;
     std::vector<VkImageView> swapchain_image_views_{};
+    std::vector<VkFramebuffer> swapchain_framebuffers_{};
+
     VkRenderPass render_pass_ = VK_NULL_HANDLE;
     VkPipelineLayout pipeline_layout_ = VK_NULL_HANDLE;
     VkPipeline graphics_pipeline_ = VK_NULL_HANDLE;
-    std::vector<VkFramebuffer> swapchain_framebuffers_{};
-    VkCommandPool command_pool_ = VK_NULL_HANDLE;
-    VkCommandBuffer command_buffer_ = VK_NULL_HANDLE;
 
-    VkSemaphore image_available_semaphore_ = VK_NULL_HANDLE;
-    VkSemaphore render_finished_semaphore_ = VK_NULL_HANDLE;
-    VkFence in_flight_fence_ = VK_NULL_HANDLE;
+    VkCommandPool command_pool_ = VK_NULL_HANDLE;
+    std::vector<VkCommandBuffer> command_buffers_{};
+
+    std::vector < VkSemaphore> image_available_semaphores_{};
+    std::vector < VkSemaphore> render_finished_semaphores_{};
+    std::vector < VkFence> in_flight_fences_{};
+    uint32_t current_frame_ = 0;
 };
