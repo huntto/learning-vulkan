@@ -21,20 +21,27 @@ struct SwapchainSupportDetails {
 
 class HelloTriangleApplication {
 public:
-    virtual void OnInit();
-    virtual void OnRelease();
     virtual void OnRender();
     virtual void OnUpdate();
 
-    void SetHINSTANCE(HINSTANCE hinstance) {
+    void OnWindowCreated(HINSTANCE hinstance, HWND hwnd) {
         hinstance_ = hinstance;
+        hwnd_ = hwnd;
+        Init();
     }
 
-    void SetHWND(HWND hwnd) {
-        hwnd_ = hwnd;
+    void OnWindowDestroyed() {
+        Release();
+    }
+
+    void OnWindowSizeChanged() {
+        framebuffer_resized_ = true;
     }
 protected:
     void PrintFPS();
+
+    virtual void Init();
+    virtual void Release();
 
     virtual void CreateInstance();
     virtual void DestroyInstance();
@@ -53,6 +60,12 @@ protected:
     virtual const std::vector<const char*> GetDeviceExtensions() {
         return std::vector<const char*>{
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        };
+    }
+
+    virtual const std::vector<const char*> GetValidationLayers() {
+        return std::vector<const char*> {
+            "VK_LAYER_KHRONOS_validation",
         };
     }
 
@@ -80,6 +93,8 @@ protected:
     virtual void RecordCommandBuffer(VkCommandBuffer command_buffer, uint32_t image_index);
     virtual void CreateSyncObjects();
     virtual void DestroySyncObjects();
+    virtual void RecreateSwapchain();
+    virtual void CleanupSwapchain();
 
 #ifdef NDEBUG
     const bool kEnableValidationLayers = false;
@@ -119,4 +134,6 @@ protected:
     std::vector < VkSemaphore> render_finished_semaphores_{};
     std::vector < VkFence> in_flight_fences_{};
     uint32_t current_frame_ = 0;
+
+    bool framebuffer_resized_ = false;
 };

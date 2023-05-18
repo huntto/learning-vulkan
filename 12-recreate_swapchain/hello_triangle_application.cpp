@@ -14,8 +14,8 @@
 
 #pragma warning(disable : 26812)
 
-void HelloTriangleApplication::OnInit() {
-    LOGD("OnInit");
+void HelloTriangleApplication::Init() {
+    LOGD("Init");
     CreateInstance();
     SetupDebugMessenger();
     CreateSurface();
@@ -32,8 +32,8 @@ void HelloTriangleApplication::OnInit() {
     CreateSyncObjects();
 }
 
-void HelloTriangleApplication::OnRelease() {
-    LOGD("OnRelease");
+void HelloTriangleApplication::Release() {
+    LOGD("Release");
     vkDeviceWaitIdle(device_);
     DestroySyncObjects();
     DestroyCommandBuffers();
@@ -61,10 +61,20 @@ void HelloTriangleApplication::OnRender() {
     }
 
     vkWaitForFences(device_, 1, &in_flight_fences_[current_frame_], VK_TRUE, UINT64_MAX);
-    vkResetFences(device_, 1, &in_flight_fences_[current_frame_]);
 
     uint32_t image_index;
-    vkAcquireNextImageKHR(device_, swapchain_, UINT64_MAX, image_available_semaphores_[current_frame_], VK_NULL_HANDLE, &image_index);
+    VkResult result = vkAcquireNextImageKHR(device_, swapchain_, UINT64_MAX, image_available_semaphores_[current_frame_], VK_NULL_HANDLE, &image_index);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        RecreateSwapchain();
+        return;
+    }
+    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        throw std::runtime_error("failed to acquire swap chain image!");
+    }
+
+    vkResetFences(device_, 1, &in_flight_fences_[current_frame_]);
+
     vkResetCommandBuffer(command_buffers_[current_frame_], 0);
     RecordCommandBuffer(command_buffers_[current_frame_], image_index);
 
@@ -96,7 +106,14 @@ void HelloTriangleApplication::OnRender() {
     present_info.pSwapchains = swapchains;
     present_info.pImageIndices = &image_index;
     present_info.pResults = nullptr; // Optional
-    vkQueuePresentKHR(present_queue_, &present_info);
+    result = vkQueuePresentKHR(present_queue_, &present_info);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebuffer_resized_) {
+        framebuffer_resized_ = false;
+        RecreateSwapchain();
+    }
+    else if (result != VK_SUCCESS) {
+        throw std::runtime_error("failed to present swap chain image!");
+    }
 
     current_frame_ = (current_frame_ + 1) % kMaxFramesInFlight;
 }
@@ -142,17 +159,15 @@ void HelloTriangleApplication::CreateInstance() {
         instance_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
-    create_info.enabledExtensionCount = instance_extensions.size();
+    create_info.enabledExtensionCount = static_cast<uint32_t>(instance_extensions.size());
     create_info.ppEnabledExtensionNames = instance_extensions.data();
 
-    std::vector<const char*> validation_layers{
-        "VK_LAYER_KHRONOS_validation",
-    };
+    std::vector<const char*> validation_layers = GetValidationLayers();
     if (kEnableValidationLayers) {
         if (!CheckValidationLayerSupport(validation_layers)) {
             throw std::runtime_error("validation layers requested, but not available!");
         }
-        create_info.enabledLayerCount = validation_layers.size();
+        create_info.enabledLayerCount = static_cast<uint32_t>(validation_layers.size());
         create_info.ppEnabledLayerNames = validation_layers.data();
     }
     else {
@@ -323,7 +338,7 @@ void HelloTriangleApplication::CreateLogicalDevice() {
     VkPhysicalDeviceFeatures device_features{};
     create_info.pEnabledFeatures = &device_features;
     auto device_extensions = GetDeviceExtensions();
-    create_info.enabledExtensionCount = device_extensions.size();
+    create_info.enabledExtensionCount = static_cast<uint32_t>(device_extensions.size());
     create_info.ppEnabledExtensionNames = device_extensions.data();
 
     std::vector<VkDeviceQueueCreateInfo> queue_create_infos{};
@@ -341,14 +356,12 @@ void HelloTriangleApplication::CreateLogicalDevice() {
         queue_create_infos.push_back(queue_create_info);
     }
 
-    create_info.queueCreateInfoCount = queue_create_infos.size();
+    create_info.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());
     create_info.pQueueCreateInfos = queue_create_infos.data();
 
-    std::vector<const char*> validation_layers{
-        "VK_LAYER_KHRONOS_validation",
-    };
+    std::vector<const char*> validation_layers = GetValidationLayers();
     if (kEnableValidationLayers) {
-        create_info.enabledLayerCount = validation_layers.size();
+        create_info.enabledLayerCount = static_cast<uint32_t>(validation_layers.size());
         create_info.ppEnabledLayerNames = validation_layers.data();
     }
     else {
@@ -855,7 +868,7 @@ void HelloTriangleApplication::CreateCommandBuffers() {
     alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     alloc_info.commandPool = command_pool_;
     alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    alloc_info.commandBufferCount = command_buffers_.size();
+    alloc_info.commandBufferCount = static_cast<uint32_t>(command_buffers_.size());
 
     if (vkAllocateCommandBuffers(device_, &alloc_info, command_buffers_.data()) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
@@ -952,4 +965,20 @@ void HelloTriangleApplication::DestroySyncObjects() {
         render_finished_semaphores_.clear();
         in_flight_fences_.clear();
     }
+}
+
+void HelloTriangleApplication::CleanupSwapchain() {
+    DestroyFramebuffers();
+    DestroySwapchainImageViews();
+    DestroySwapchain();
+}
+
+void HelloTriangleApplication::RecreateSwapchain() {
+    vkDeviceWaitIdle(device_);
+
+    CleanupSwapchain();
+
+    CreateSwapchain();
+    CreateSwapchainImageViews();
+    CreateFramebuffers();
 }

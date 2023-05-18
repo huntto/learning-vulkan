@@ -12,8 +12,17 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
     {
         LPCREATESTRUCT pCreateStruct = reinterpret_cast<LPCREATESTRUCT>(lParam);
         SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pCreateStruct->lpCreateParams));
+        HelloTriangleApplication* app = reinterpret_cast<HelloTriangleApplication*>(pCreateStruct->lpCreateParams);
+        HINSTANCE hinstance = GetModuleHandle(0);
+        if (app) {
+            app->OnWindowCreated(hinstance, hwnd);
+        }
     }
     return 0;
+    case WM_SIZE:
+        if (app) {
+            app->OnWindowSizeChanged();
+        }
     case WM_PAINT:
     case WM_ERASEBKGND:
         if (app) {
@@ -22,6 +31,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
         }
         return 0;
     case WM_DESTROY:
+        if (app) {
+            app->OnWindowDestroyed();
+        }
         PostQuitMessage(0);
         return 0;
     }
@@ -85,10 +97,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance,
     ShowWindow(hwnd, nShowCmd);
     UpdateWindow(hwnd);
 
-    app.SetHINSTANCE(hInstance);
-    app.SetHWND(hwnd);
-    app.OnInit();
-
     MSG msg = {};
     while (msg.message != WM_QUIT) {
         if (::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
@@ -96,8 +104,6 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance,
             ::DispatchMessage(&msg);
         }
     }
-
-    app.OnRelease();
 
     return (int)msg.wParam;
 }
