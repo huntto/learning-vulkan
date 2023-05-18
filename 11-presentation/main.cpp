@@ -15,6 +15,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
     }
     return 0;
     case WM_PAINT:
+    case WM_ERASEBKGND:
         if (app) {
             app->OnUpdate();
             app->OnRender();
