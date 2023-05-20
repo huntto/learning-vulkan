@@ -29,6 +29,7 @@ void HelloTriangleApplication::Init() {
     CreateFramebuffers();
     CreateCommandPool();
     CreateVertexBuffer();
+    CreateIndexBuffer();
     CreateCommandBuffers();
     CreateSyncObjects();
 }
@@ -37,6 +38,7 @@ void HelloTriangleApplication::Release() {
     LOGD("Release");
     vkDeviceWaitIdle(device_);
     DestroySyncObjects();
+    DestroyIndexBuffer();
     DestroyVertexBuffer();
     DestroyCommandBuffers();
     DestroyCommandPool();
@@ -927,7 +929,10 @@ void HelloTriangleApplication::RecordCommandBuffer(VkCommandBuffer command_buffe
     VkBuffer vertex_buffers[] = { vertex_buffer_ };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
-    vkCmdDraw(command_buffer, static_cast<uint32_t>(kVertices.size()), 1, 0, 0);
+
+    vkCmdBindIndexBuffer(command_buffer, index_buffer_, 0, VK_INDEX_TYPE_UINT16);
+
+    vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(kIndices.size()), 1, 0, 0, 0);
 
     vkCmdEndRenderPass(command_buffer);
     if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
@@ -1090,4 +1095,34 @@ void HelloTriangleApplication::CopyBuffer(VkBuffer src_buffer, VkBuffer dst_buff
     vkQueueSubmit(graphics_queue_, 1, &submit_info, VK_NULL_HANDLE);
     vkQueueWaitIdle(graphics_queue_);
     vkFreeCommandBuffers(device_, command_pool_, 1, &command_buffer);
+}
+
+void HelloTriangleApplication::CreateIndexBuffer() {
+    VkDeviceSize buffer_size = sizeof(kIndices[0]) * kIndices.size();
+
+    VkBuffer staging_buffer;
+    VkDeviceMemory staging_buffer_memory;
+    CreateBuffer(buffer_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, staging_buffer, staging_buffer_memory);
+    void* data;
+    vkMapMemory(device_, staging_buffer_memory, 0, buffer_size, 0, &data);
+    memcpy(data, kIndices.data(), buffer_size);
+    vkUnmapMemory(device_, staging_buffer_memory);
+
+    CreateBuffer(buffer_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, index_buffer_, index_buffer_memory_);
+
+    CopyBuffer(staging_buffer, index_buffer_, buffer_size);
+
+    vkDestroyBuffer(device_, staging_buffer, nullptr);
+    vkFreeMemory(device_, staging_buffer_memory, nullptr);
+}
+
+void HelloTriangleApplication::DestroyIndexBuffer() {
+    if (device_ && index_buffer_ && index_buffer_memory_) {
+        vkDestroyBuffer(device_, index_buffer_, nullptr);
+        vkFreeMemory(device_, index_buffer_memory_, nullptr);
+        index_buffer_ = VK_NULL_HANDLE;
+        index_buffer_memory_ = VK_NULL_HANDLE;
+    }
 }

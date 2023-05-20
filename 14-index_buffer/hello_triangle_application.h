@@ -133,6 +133,8 @@ protected:
     virtual uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     virtual void CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& buffer_memory);
     virtual void CopyBuffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size);
+    virtual void CreateIndexBuffer();
+    virtual void DestroyIndexBuffer();
 
 
 #ifdef NDEBUG
@@ -176,12 +178,20 @@ protected:
 
     VkBuffer vertex_buffer_ = VK_NULL_HANDLE;
     VkDeviceMemory vertex_buffer_memory_ = VK_NULL_HANDLE;
+    VkBuffer index_buffer_ = VK_NULL_HANDLE;
+    VkDeviceMemory index_buffer_memory_ = VK_NULL_HANDLE;
 
     bool framebuffer_resized_ = false;
 
     const std::vector<Vertex> kVertices = {
-        {{ 0.0f, -0.5f }, {1.0f, 1.0f, 1.0f}},
-        {{ 0.5f, 0.5f }, {0.0f, 1.0f, 0.0f}},
-        {{ -0.5f, 0.5f }, {0.0f, 0.0f, 1.0f}}
+        {{ -0.5f, -0.5f }, {1.0f, 0.0f, 0.0f}},
+        {{ 0.5f, -0.5f }, {0.0f, 1.0f, 0.0f}},
+        {{ 0.5f, 0.5f }, {0.0f, 0.0f, 1.0f}},
+        {{ -0.5f, 0.5f }, {1.0f, 1.0f, 1.0f}}
     };
+
+    const std::vector<uint16_t> kIndices = {
+        0, 1, 2, 2, 3, 0
+    };
+
 };
