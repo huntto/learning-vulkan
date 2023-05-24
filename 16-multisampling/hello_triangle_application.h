@@ -151,6 +151,20 @@ protected:
     virtual void CreateDescriptorPool();
     virtual void DestroyDescriptorPool();
     virtual void CreateDescriptorSets();
+    virtual VkSampleCountFlagBits GetMaxUsableSampleCount();
+    virtual void CreateImage(uint32_t width,
+        uint32_t height,
+        uint32_t mip_levels,
+        VkSampleCountFlagBits num_samples,
+        VkFormat format,
+        VkImageTiling tiling,
+        VkImageUsageFlags usage,
+        VkMemoryPropertyFlags properties,
+        VkImage& image,
+        VkDeviceMemory& image_memory);
+    virtual void CreateColorResources();
+    virtual VkImageView CreateImageView(VkImage image, VkFormat format, VkImageAspectFlags aspect_flags, uint32_t mip_levels);
+    virtual void DestroyColorResources();
 
 #ifdef NDEBUG
     const bool kEnableValidationLayers = false;
@@ -168,6 +182,7 @@ protected:
     VkSurfaceKHR surface_ = VK_NULL_HANDLE;
 
     VkPhysicalDevice physical_device_ = VK_NULL_HANDLE;
+    VkSampleCountFlagBits msaa_samples_ = VK_SAMPLE_COUNT_1_BIT;
     VkDevice device_ = VK_NULL_HANDLE;
     VkQueue present_queue_ = VK_NULL_HANDLE;
     VkQueue graphics_queue_ = VK_NULL_HANDLE;
@@ -178,6 +193,10 @@ protected:
     VkExtent2D swapchain_extent_;
     std::vector<VkImageView> swapchain_image_views_{};
     std::vector<VkFramebuffer> swapchain_framebuffers_{};
+
+    VkImage color_image_ = VK_NULL_HANDLE;
+    VkDeviceMemory color_image_memory_ = VK_NULL_HANDLE;
+    VkImageView color_image_view_ = VK_NULL_HANDLE;
 
     VkRenderPass render_pass_ = VK_NULL_HANDLE;
     VkPipelineLayout pipeline_layout_ = VK_NULL_HANDLE;
